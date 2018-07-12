@@ -7,7 +7,7 @@ local addon = E:NewModule("MinimapButtons", "AceHook-3.0", "AceTimer-3.0")
 local ceil, mod = math.ceil, math.mod
 local find, len, split, sub = string.find, string.len, string.split, string.sub
 local tinsert, getn = table.insert, table.getn
-local ipairs, unpack = ipairs, unpack
+local ipairs, select, unpack = ipairs, select, unpack
 --WoW API / Variables
 local CreateFrame = CreateFrame
 local UIFrameFadeIn, UIFrameFadeOut = UIFrameFadeIn, UIFrameFadeOut
@@ -344,8 +344,7 @@ function addon:UpdateLayout()
 	local VisibleButtons = self:GetVisibleList()
 
 	if getn(VisibleButtons) < 1 then
-		self.frame:SetWidth(db.buttonsize + (db.buttonspacing * 2))
-		self.frame:SetHeight(db.buttonsize + (db.buttonspacing * 2))
+		E:Size(self.frame, db.buttonsize + (db.buttonspacing * 2))
 		self.frame.backdrop:Hide()
 		return
 	end
@@ -365,10 +364,8 @@ function addon:UpdateLayout()
 
 	local barWidth = (db.buttonsize * buttonsPerRow) + (db.buttonspacing * (buttonsPerRow - 1)) + ((db.backdrop == true and (E.Border + backdropSpacing) or E.Spacing)*2)
 	local barHeight = (db.buttonsize * numColumns) + (db.buttonspacing * (numColumns - 1)) + ((db.backdrop == true and (E.Border + backdropSpacing) or E.Spacing)*2)
-	self.frame:SetWidth(barWidth, barHeight)
-	self.frame:SetHeight(barWidth, barHeight)
-	self.frame.mover:SetWidth(barWidth, barHeight)
-	self.frame.mover:SetHeight(barWidth, barHeight)
+	E:Size(self.frame, barWidth, barHeight)
+	E:Size(self.frame.mover, barWidth, barHeight)
 
 	if db.backdrop == true then
 		self.frame.backdrop:Show()
@@ -555,8 +552,7 @@ function addon:Initialize()
 	local backdropSpacing = db.backdropSpacing or db.buttonspacing
 
 	self.frame = CreateFrame("Button", "ElvUI_MinimapButtonGrabber", UIParent)
-	self.frame:SetWidth(db.buttonsize + (backdropSpacing * 2))
-	self.frame:SetHeight(db.buttonsize + (backdropSpacing * 2))
+	E:Size(self.frame, db.buttonsize + (backdropSpacing * 2))
 	self.frame:SetPoint("TOPRIGHT", MMHolder, "BOTTOMRIGHT", 0, 0)
 	self.frame:SetFrameStrata("LOW")
 	self.frame:SetClampedToScreen(true)
