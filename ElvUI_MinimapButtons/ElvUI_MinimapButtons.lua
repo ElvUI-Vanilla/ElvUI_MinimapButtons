@@ -1,13 +1,16 @@
-﻿local E, L, V, P, G, _ = unpack(ElvUI)
-local addon = E:NewModule("MinimapButtons", "AceHook-3.0", "AceTimer-3.0")
+local E, L, V, P, G = unpack(ElvUI) --Import: Engine, Locales, PrivateDB, ProfileDB, GlobalDB
 local EP = LibStub("LibElvUIPlugin-1.0")
+local addon = E:NewModule("MinimapButtons", "AceHook-3.0", "AceTimer-3.0")
 
-local addonName = ...
-
-local ceil = math.ceil
-local find, len, sub = string.find, string.len, string.sub
-local tinsert = table.insert
-local select, ipairs, unpack = select, ipairs, unpack
+--Cache global variables
+--Lua functions
+local ceil, mod = math.ceil, math.mod
+local find, len, split, sub = string.find, string.len, string.split, string.sub
+local tinsert, getn = table.insert, table.getn
+local ipairs, unpack = ipairs, unpack
+--WoW API / Variables
+local CreateFrame = CreateFrame
+local UIFrameFadeIn, UIFrameFadeOut = UIFrameFadeIn, UIFrameFadeOut
 
 local points = {
 	["TOPLEFT"] = "TOPLEFT",
@@ -46,16 +49,12 @@ P.general.minimap.buttons = {
 }
 
 local function GetOptions()
-	E.Options.args.MinimapButtons = {
+	E.Options.args.maps.args.minimap.args.buttonGrabber = {
 		order = 10,
 		type = "group",
-		name = L["Minimap Buttons"],
-		get = function(info) return E.db.general.minimap.buttons[info[#info]] end,
-		set = function(info, value)
-			E.db.general.minimap.buttons[info[#info]] = value
-			addon:UpdateLayout()
-			addon:UpdateAlpha()
-		end,
+		name = "ElvUI Minimap Buttons",
+		get = function(info) return E.db.general.minimap.buttons[ info[getn(info)] ] end,
+		set = function(info, value) E.db.general.minimap.buttons[ info[getn(info)] ] = value addon:UpdateLayout() addon:UpdateAlpha() end,
 		args = {
 			point = {
 				order = 1,
@@ -120,11 +119,8 @@ local function GetOptions()
 				type = "group",
 				name = L["Inside Minimap"],
 				guiInline = true,
-				get = function(info) return E.db.general.minimap.buttons.insideMinimap[info[#info]] end,
-				set = function(info, value)
-					E.db.general.minimap.buttons.insideMinimap[info[#info]] = value
-					addon:UpdatePosition()
-				end,
+				get = function(info) return E.db.general.minimap.buttons.insideMinimap[info[getn(info)]] end,
+				set = function(info, value) E.db.general.minimap.buttons.insideMinimap[info[getn(info)]] = value addon:UpdatePosition() end,
 				args = {
 					enable = {
 						order = 1,
@@ -167,12 +163,10 @@ local IgnoreButtons = {
 	"ButtonCollectFrame",
 	"GameTimeFrame",
 	"MiniMapBattlefieldFrame",
-	"MiniMapLFGFrame",
 	"MiniMapMailFrame",
 	"MiniMapPing",
 	"MiniMapRecordingButton",
 	"MiniMapTracking",
-	"MiniMapTrackingButton",
 	"MiniMapVoiceChatFrame",
 	"MiniMapWorldMapButton",
 	"Minimap",
@@ -181,29 +175,22 @@ local IgnoreButtons = {
 	"MinimapZoneTextButton",
 	"MinimapZoomIn",
 	"MinimapZoomOut",
-	"TimeManagerClockButton",
+	"TimeManagerClockButton"
 }
 
 local GenericIgnores = {
-	"GuildInstance",
-
 	-- GatherMate
 	"GatherMatePin",
 	-- Gatherer
 	"GatherNote",
-	-- GuildMap3
-	"GuildMap3Mini",
+	-- GuildMap2
+	"GuildMap2Mini",
 	-- HandyNotes
 	"HandyNotesPin",
 	-- LibRockConfig
 	"LibRockConfig-1.0_MinimapButton",
 	-- Nauticus
-	"NauticusMiniIcon",
-	"WestPointer",
-	-- QuestPointer
-	"poiMinimap",
-	-- Spy
-	"Spy_MapNoteList_mini",
+	"Naut_MiniMapIconButton",
 }
 
 local PartialIgnores = {
@@ -250,10 +237,11 @@ function addon:GrabMinimapButtons()
 	end
 
 	if AtlasButtonFrame then self:SkinMinimapButton(AtlasButton) end
+	if AtlasLootMinimapButtonFrame then self:SkinMinimapButton(AtlasLootMinimapButton) end
 	if FishingBuddyMinimapFrame then self:SkinMinimapButton(FishingBuddyMinimapButton) end
 	if HealBot_MMButton then self:SkinMinimapButton(HealBot_MMButton) end
 
-	if self:CheckVisibility() or self.needUpdate then
+	if self:CheckVisibility() or self.needupdate then
 		self:UpdateLayout()
 	end
 end
@@ -267,21 +255,21 @@ function addon:SkinMinimapButton(button)
 	if button:IsObjectType("Button") then
 		local validIcon = false
 
-		for i = 1, #WhiteList do
+		for i = 1, getn(WhiteList) do
 			if sub(name, 1, len(WhiteList[i])) == WhiteList[i] then validIcon = true break end
 		end
 
 		if not validIcon then
-			for i = 1, #IgnoreButtons do
+			for i = 1, getn(IgnoreButtons) do
 				if name == IgnoreButtons[i] then return end
 			end
 
-			for i = 1, #GenericIgnores do
+			for i = 1, getn(GenericIgnores) do
 				if sub(name, 1, len(GenericIgnores[i])) == GenericIgnores[i] then return end
 			end
 
-			for i = 1, #PartialIgnores do
-				if find(name, PartialIgnores[i]) then return end
+			for i = 1, getn(PartialIgnores) do
+				if find(name, PartialIgnores[i]) ~= nil then return end
 			end
 		end
 
@@ -305,7 +293,7 @@ function addon:SkinMinimapButton(button)
 					region:SetTexture("Interface\\Icons\\INV_Helmet_87")
 				elseif name == "OutfitterMinimapButton" then
 					if region:GetTexture() == "Interface\\Addons\\Outfitter\\Textures\\MinimapButton" then
-						region:SetTexture(nil)
+						region:SetTexture("Interface\\Icons\\INV_Chest_Cloth_43")
 					end
 				elseif name == "SmartBuff_MiniMapButton" then
 					region:SetTexture("Interface\\Icons\\Spell_Nature_Purge")
@@ -314,9 +302,9 @@ function addon:SkinMinimapButton(button)
 				end
 
 				region:ClearAllPoints()
-				region:SetInside()
+				E:SetInside(region)
 				region:SetTexCoord(unpack(E.TexCoords))
-				button:HookScript("OnLeave", function(self) region:SetTexCoord(unpack(E.TexCoords)) end)
+				HookScript(button, "OnLeave", function() region:SetTexCoord(unpack(E.TexCoords)) end)
 
 				region:SetDrawLayer("ARTWORK")
 				region.SetPoint = function() return end
@@ -327,16 +315,15 @@ function addon:SkinMinimapButton(button)
 	button:SetParent(self.frame)
 	button:SetFrameLevel(self.frame:GetFrameLevel() + 2)
 
-	button:SetTemplate("Default")
+	E:SetTemplate(button, "Default")
 	button:SetScript("OnDragStart", nil)
 	button:SetScript("OnDragStop", nil)
-	button:HookScript("OnEnter", self.OnEnter)
-	button:HookScript("OnLeave", self.OnLeave)
+	HookScript(button, "OnEnter", self.OnEnter)
+	HookScript(button, "OnLeave", self.OnLeave)
 
 	button.isSkinned = true
 	tinsert(SkinnedButtons, button)
-
-	self.needUpdate = true
+	self.needupdate = true
 end
 
 function addon:GetVisibleList()
@@ -351,13 +338,14 @@ function addon:GetVisibleList()
 end
 
 function addon:UpdateLayout()
-	if #SkinnedButtons < 1 then return end
+	if getn(SkinnedButtons) < 1 then return end
 
 	local db = E.db.general.minimap.buttons
 	local VisibleButtons = self:GetVisibleList()
 
-	if #VisibleButtons < 1 then
-		self.frame:Size(db.buttonsize + (db.buttonspacing * 2))
+	if getn(VisibleButtons) < 1 then
+		self.frame:SetWidth(db.buttonsize + (db.buttonspacing * 2))
+		self.frame:SetHeight(db.buttonsize + (db.buttonspacing * 2))
 		self.frame.backdrop:Hide()
 		return
 	end
@@ -367,7 +355,7 @@ function addon:UpdateLayout()
 	end
 
 	local backdropSpacing = db.backdropSpacing or db.buttonspacing
-	local numButtons = #VisibleButtons
+	local numButtons = getn(VisibleButtons)
 	local buttonsPerRow = db.buttonsPerRow
 	local numColumns = ceil(numButtons / buttonsPerRow)
 
@@ -375,12 +363,14 @@ function addon:UpdateLayout()
 		buttonsPerRow = numButtons
 	end
 
-	local barWidth = (db.buttonsize * buttonsPerRow) + (db.buttonspacing * (buttonsPerRow - 1)) + ((db.backdrop and (E.Border + backdropSpacing) or E.Spacing)*2)
-	local barHeight = (db.buttonsize * numColumns) + (db.buttonspacing * (numColumns - 1)) + ((db.backdrop and (E.Border + backdropSpacing) or E.Spacing)*2)
-	self.frame:Size(barWidth, barHeight)
-	self.frame.mover:Size(barWidth, barHeight)
+	local barWidth = (db.buttonsize * buttonsPerRow) + (db.buttonspacing * (buttonsPerRow - 1)) + ((db.backdrop == true and (E.Border + backdropSpacing) or E.Spacing)*2)
+	local barHeight = (db.buttonsize * numColumns) + (db.buttonspacing * (numColumns - 1)) + ((db.backdrop == true and (E.Border + backdropSpacing) or E.Spacing)*2)
+	self.frame:SetWidth(barWidth, barHeight)
+	self.frame:SetHeight(barWidth, barHeight)
+	self.frame.mover:SetWidth(barWidth, barHeight)
+	self.frame.mover:SetHeight(barWidth, barHeight)
 
-	if db.backdrop then
+	if db.backdrop == true then
 		self.frame.backdrop:Show()
 	else
 		self.frame.backdrop:Hide()
@@ -399,11 +389,11 @@ function addon:UpdateLayout()
 		horizontalGrowth = "LEFT"
 	end
 
-	local firstButtonSpacing = (db.backdrop and (E.Border + backdropSpacing) or E.Spacing)
+	local firstButtonSpacing = (db.backdrop == true and (E.Border + backdropSpacing) or E.Spacing)
 	for i, button in ipairs(VisibleButtons) do
 		local lastButton = VisibleButtons[i - 1]
 		local lastColumnButton = VisibleButtons[i - buttonsPerRow]
-		button:Size(db.buttonsize)
+		E:Size(button, db.buttonsize)
 		button:ClearAllPoints()
 
 		if i == 1 then
@@ -418,8 +408,8 @@ function addon:UpdateLayout()
 				x, y = -firstButtonSpacing, firstButtonSpacing
 			end
 
-			button:Point(db.point, self.frame, db.point, x, y)
-		elseif (i - 1) % buttonsPerRow == 0 then
+			button:SetPoint(db.point, self.frame, db.point, x, y)
+		elseif mod(i - 1, buttonsPerRow) == 0 then
 			local x = 0
 			local y = -db.buttonspacing
 			local buttonPoint, anchorPoint = "TOP", "BOTTOM"
@@ -428,7 +418,7 @@ function addon:UpdateLayout()
 				buttonPoint = "BOTTOM"
 				anchorPoint = "TOP"
 			end
-			button:Point(buttonPoint, lastColumnButton, anchorPoint, x, y)
+			button:SetPoint(buttonPoint, lastColumnButton, anchorPoint, x, y)
 		else
 			local x = db.buttonspacing
 			local y = 0
@@ -439,11 +429,11 @@ function addon:UpdateLayout()
 				anchorPoint = "LEFT"
 			end
 
-			button:Point(buttonPoint, lastButton, anchorPoint, x, y)
+			button:SetPoint(buttonPoint, lastButton, anchorPoint, x, y)
 		end
 	end
 
-	self.needUpdate = false
+	self.needupdate = false
 end
 
 function addon:UpdatePosition()
@@ -451,7 +441,7 @@ function addon:UpdatePosition()
 
 	if db.enable then
 		self.frame:ClearAllPoints()
-		self.frame:Point(db.position, Minimap, db.position, db.xOffset, db.yOffset)
+		self.frame:SetPoint(db.position, Minimap, db.position, db.xOffset, db.yOffset)
 
 		E:DisableMover(self.frame.mover:GetName())
 	else
@@ -489,26 +479,26 @@ local function EnchantrixIconFix()
 	local oldButton = Enchantrix.MiniIcon
 
 	local newButton = CreateFrame("Button", "EnxMiniMapIcon", Minimap)
-	newButton:Size(20)
+	E:Size(newButton, 20)
 	newButton:SetToplevel(true)
 	newButton:SetFrameStrata("LOW")
-	newButton:Point("RIGHT", Minimap, "LEFT", 0,0)
+	E:Point(newButton, "RIGHT", Minimap, "LEFT", 0, 0)
 	newButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
 	newButton.icon = oldButton.icon
 	newButton.icon:SetTexCoord(0.2, 0.84, 0.13, 0.87)
 	newButton.icon:SetParent(newButton)
-	newButton.icon:SetPoint("TOPLEFT", newButton, "TOPLEFT", 0, 0)
+	E:Point(newButton.icon, "TOPLEFT", newButton, "TOPLEFT", 0, 0)
 
 	newButton.mask = oldButton.mask
 	newButton.mask:SetParent(newButton)
-	newButton.mask:SetPoint("TOPLEFT", newButton, "TOPLEFT", -8, 8)
+	E:Point(newButton.mask, "TOPLEFT", newButton, "TOPLEFT", -8, 8)
 
 	newButton:SetScript("OnClick", oldButton:GetScript("OnClick"))
 
 	oldButton:SetMovable(false)
 	oldButton:SetParent(UIParent)
-	oldButton:Point("TOPRIGHT", UIParent)
+	E:Point(oldButton, "TOPRIGHT", UIParent)
 	oldButton:Hide()
 
 	oldButton:SetScript("OnMouseDown", nil)
@@ -559,17 +549,18 @@ function addon:FixButtons()
 end
 
 function addon:Initialize()
-	EP:RegisterPlugin(addonName, GetOptions)
+	EP:RegisterPlugin("ElvUI_MinimapButtons", GetOptions)
 
 	local db = E.db.general.minimap.buttons
 	local backdropSpacing = db.backdropSpacing or db.buttonspacing
 
 	self.frame = CreateFrame("Button", "ElvUI_MinimapButtonGrabber", UIParent)
-	self.frame:Size(db.buttonsize + (backdropSpacing * 2))
-	self.frame:Point("TOPRIGHT", MMHolder, "BOTTOMRIGHT", 0, 0)
+	self.frame:SetWidth(db.buttonsize + (backdropSpacing * 2))
+	self.frame:SetHeight(db.buttonsize + (backdropSpacing * 2))
+	self.frame:SetPoint("TOPRIGHT", MMHolder, "BOTTOMRIGHT", 0, 0)
 	self.frame:SetFrameStrata("LOW")
 	self.frame:SetClampedToScreen(true)
-	self.frame:CreateBackdrop("Default")
+	E:CreateBackdrop(self.frame, "Default")
 
 	self.frame.backdrop:SetPoint("TOPLEFT", self.frame, "TOPLEFT", E.Spacing, -E.Spacing)
 	self.frame.backdrop:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -E.Spacing, E.Spacing)
