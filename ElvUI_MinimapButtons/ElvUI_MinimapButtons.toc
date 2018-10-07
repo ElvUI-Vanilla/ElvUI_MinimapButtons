@@ -1,5 +1,5 @@
 ﻿## Interface: 11200
-## Title: |cffA11313E|r|cffC4C4C4lvUI|r |cffA11313M|r|cffC4C4C4inimap|r |cffA11313B|r|cffC4C4C4uttons|r
+## Title: |cff175581E|r|cffC4C4C4lvUI|r |cff175581M|r|cffC4C4C4inimap|r |cff175581B|r|cffC4C4C4uttons|r
 ## Author: Pinya, Bunny
 ## Version: 1.01
 ## RequiredDeps: ElvUI
