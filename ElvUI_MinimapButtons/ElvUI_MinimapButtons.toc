@@ -4,5 +4,5 @@
 ## Version: 1.01
 ## RequiredDeps: ElvUI
 
-locales\load_locales.xml
+Locales\Load_Locales.xml
 ElvUI_MinimapButtons.lua

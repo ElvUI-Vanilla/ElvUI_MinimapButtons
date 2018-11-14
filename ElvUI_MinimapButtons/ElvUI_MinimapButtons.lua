@@ -1,11 +1,11 @@
 local E, L, V, P, G = unpack(ElvUI) --Import: Engine, Locales, PrivateDB, ProfileDB, GlobalDB
-local EP = LibStub("LibElvUIPlugin-1.0")
-local addon = E:NewModule("MinimapButtons", "AceHook-3.0", "AceTimer-3.0")
+local EP = LibStub("LibElvUIPlugin-1.0");
+local addon = E:NewModule("MinimapButtons", "AceHook-3.0", "AceTimer-3.0");
 
 --Cache global variables
 --Lua functions
 local ceil, mod = math.ceil, math.mod
-local find, len, split, sub = string.find, string.len, string.split, string.sub
+local find, format, len, split, sub = string.find, string.format, string.len, string.split, string.sub
 local tinsert, getn = table.insert, table.getn
 local ipairs, select, unpack = ipairs, select, unpack
 --WoW API / Variables
@@ -48,44 +48,82 @@ P.general.minimap.buttons = {
 	}
 }
 
+local function ColorizeSettingName(settingName)
+	return format("|cff1784d1%s|r", settingName)
+end
+
 local function GetOptions()
-	E.Options.args.maps.args.minimap.args.buttonGrabber = {
+	if not E.Options.args.elvuiPlugins then
+		E.Options.args.elvuiPlugins = {
+			order = 50,
+			type = "group",
+			name = "|cff00b30bE|r|cffC4C4C4lvUI_|r|cff00b30bP|r|cffC4C4C4lugins|r",
+			args = {
+				header = {
+					order = 0,
+					type = "header",
+					name = "|cff00b30bE|r|cffC4C4C4lvUI_|r|cff00b30bP|r|cffC4C4C4lugins|r"
+				},
+				buttonGrabberShortcut = {
+					type = "execute",
+					name = ColorizeSettingName(L["Minimap Buttons"]),
+					func = function()
+						if IsAddOnLoaded("ElvUI_Config") then
+							local ACD = LibStub("AceConfigDialog-3.0-ElvUI")
+							ACD:SelectGroup("ElvUI", "elvuiPlugins", "buttonGrabber")
+						end
+					end
+				}
+			}
+		}
+	elseif not E.Options.args.elvuiPlugins.args.buttonGrabberShortcut then
+		E.Options.args.elvuiPlugins.args.buttonGrabberShortcut = {
+			type = "execute",
+			name = ColorizeSettingName(L["Minimap Buttons"]),
+			func = function()
+				if IsAddOnLoaded("ElvUI_Config") then
+					local ACD = LibStub("AceConfigDialog-3.0-ElvUI")
+					ACD:SelectGroup("ElvUI", "elvuiPlugins", "buttonGrabber")
+				end
+			end
+		}
+	end
+
+ 	E.Options.args.elvuiPlugins.args.buttonGrabber = {
 		order = 10,
 		type = "group",
-		name = "ElvUI Minimap Buttons",
+		name = ColorizeSettingName(L["Minimap Buttons"]),
 		get = function(info) return E.db.general.minimap.buttons[ info[getn(info)] ] end,
 		set = function(info, value) E.db.general.minimap.buttons[ info[getn(info)] ] = value addon:UpdateLayout() addon:UpdateAlpha() end,
 		args = {
-			point = {
+			header = {
 				order = 1,
+				type = "header",
+				name = L["Minimap Buttons"]
+			},
+			point = {
+				order = 2,
 				type = "select",
 				name = L["Anchor Point"],
 				desc = L["The first button anchors itself to this point on the bar."],
 				values = points
 			},
 			backdrop = {
-				order = 2,
+				order = 3,
 				type = "toggle",
 				name = L["Backdrop"]
 			},
 			mouseover = {
-				order = 3,
+				order = 4,
 				type = "toggle",
 				name = L["Mouse Over"],
 				desc = L["The frame is not shown unless you mouse over the frame."]
 			},
 			alpha = {
-				order = 4,
+				order = 5,
 				type = "range",
 				name = L["Alpha"],
 				min = 0, max = 1, step = 0.01
-			},
-			buttonsPerRow = {
-				order = 5,
-				type = "range",
-				name = L["Buttons Per Row"],
-				desc = L["The amount of buttons to display per row."],
-				min = 1, max = 12, step = 1
 			},
 			buttonsPerRow = {
 				order = 6,
@@ -94,28 +132,35 @@ local function GetOptions()
 				desc = L["The amount of buttons to display per row."],
 				min = 1, max = 12, step = 1
 			},
-			buttonsize = {
+			buttonsPerRow = {
 				order = 7,
+				type = "range",
+				name = L["Buttons Per Row"],
+				desc = L["The amount of buttons to display per row."],
+				min = 1, max = 12, step = 1
+			},
+			buttonsize = {
+				order = 8,
 				type = "range",
 				name = L["Button Size"],
 				min = 2, max = 60, step = 1
 			},
 			buttonspacing = {
-				order = 8,
+				order = 9,
 				type = "range",
 				name = L["Button Spacing"],
 				desc = L["The spacing between buttons."],
 				min = -1, max = 24, step = 1
 			},
 			backdropSpacing = {
-				order = 9,
+				order = 10,
 				type = "range",
 				name = L["Backdrop Spacing"],
 				desc = L["The spacing between the backdrop and the buttons."],
 				min = -1, max = 15, step = 1
 			},
 			insideMinimapGroup = {
-				order = 10,
+				order = 11,
 				type = "group",
 				name = L["Inside Minimap"],
 				guiInline = true,
